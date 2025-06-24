@@ -1,0 +1,15 @@
+{
+  "name": "library-managment-api",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "debug": "~2.6.9",
+    "express": "^5.1.0",
+    "http-errors": "^2.0.0",
+    "morgan": "^1.10.0"
+  }
+}

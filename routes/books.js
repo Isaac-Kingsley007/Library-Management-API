@@ -1,5 +1,6 @@
 const express = require('express');
 const libraryAuth = require('../middleware/requireLibraryAuth');
+const internalError = require('../middleware/internalError');
 const db = require('../db')
 
 const router = express.Router()
@@ -16,8 +17,7 @@ router.get('/getall', (req, res) => {
 
         res.send(books);
     } catch(error){
-        console.error(error.message);
-        res.status(500).send("Internal Server Error");
+        internalError(res, error);
     }
 });
 
@@ -39,8 +39,7 @@ router.get('/getone/:id', (req, res) => {
 
         res.send(book);
     } catch (error) {
-        console.error(error.message);
-        res.status(500).send("Internal Server Error");
+        internalError(res, error);
     }
 });
 
@@ -56,8 +55,7 @@ router.get('/getbyname/:name', (req, res) => {
 
         res.send(books);
     } catch (error) {
-        console.error(error.message);
-        res.status(500).send("Internal Server Error");
+        internalError(res, error);
     }
 });
 
@@ -79,8 +77,7 @@ router.post('/addone', (req, res) => {
 
         res.send(bookId);
     } catch(error){
-        console.error(error.message);
-        res.status(500).send("Internal Server Error");
+        internalError(res, error);
     }
 });
 
@@ -134,8 +131,7 @@ router.patch('/updateone/:id', (req, res) => {
         res.send(numberOfChanges);
 
     } catch(error){
-        console.log(error.message);
-        res.status(500).send("Internal Server Error");
+        internalError(res, error);
     }
 });
 
@@ -160,8 +156,7 @@ router.delete('/deleteone/:id', (req, res) => {
 
         res.send(numberOfChanges);
     } catch(error){
-        console.log(error.message);
-        res.status(500).send("Internal Server Error");
+        internalError(res, error);
     }
 });
 

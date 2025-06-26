@@ -1,4 +1,5 @@
 const express = require('express');
+const internalError = require('../middleware/internalError');
 const db = require('../db')
 const bcrypt = require('bcryptjs')
 
@@ -29,8 +30,7 @@ router.post('/signup', (req, res) => {
 
         res.send("Created Library");
     } catch(err){
-        console.error(err.message);
-        res.status(500).send("Internal Server Error");
+        internalError(res, err);
     }
 
 });
@@ -60,10 +60,7 @@ router.post('/signin', (req, res) => {
         res.send("Sign In Successfull");
 
     } catch (error) {
-
-        console.error(error.message);
-        res.status(500).send("Internal Server Error");
-
+        internalError(res, error);
     }
 
 });

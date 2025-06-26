@@ -6,8 +6,8 @@ const router = express.Router()
 
 router.post('/signup', (req, res) => {
     const name = req.body.name;
-    const membershipFee = req.body.membershipFee;
-    const lateFee = req.body.lateFee;
+    const membershipFee = req.body.membership_fee;
+    const lateFee = req.body.late_fee;
     const password = req.body.password;
 
     if(!(name && membershipFee && lateFee && password)){

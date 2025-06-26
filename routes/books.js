@@ -44,7 +44,7 @@ router.get('/getone/:id', (req, res) => {
     }
 });
 
-router.get('/getonebyname/:name', (req, res) => {
+router.get('/getbyname/:name', (req, res) => {
     const bookName = req.params.name;
 
     try {
@@ -69,11 +69,11 @@ router.post('/addone', (req, res) => {
     }
 
     const count = req.body.count ?? 1;
-
+    
     try{
         const bookId = db.prepare(
             `insert into books
-            library_id, name, author, count
+            (library_id, name, author, count)
             values (?, ?, ?, ?)`
         ).run(req.libraryId, name, author, count);
 
@@ -84,8 +84,85 @@ router.post('/addone', (req, res) => {
     }
 });
 
-router.post('/updateone/:id', (req, res) => {
+router.patch('/updateone/:id', (req, res) => {
+    const bookId = parseInt(req.params.id);
 
+    if(!bookId){
+        return res.status(404).send("Invalid Id");
+    }
+
+    const bodyStringParams = ['name', 'author'];
+
+    const availableNames = [];
+    const values = [];
+
+    for(const param of bodyStringParams){
+        if(req.body[param]){
+            availableNames.push(param + ' = ?');
+            values.push(req.body[param]);
+        }
+    }
+
+    if(req.body.count){
+        const countInt = parseInt(req.body.count);
+        if(!countInt){
+            return res.status(400).send("'count' should be a valid int");
+        }
+
+        availableNames.push('count = ?');
+        values.push(countInt);
+    }
+
+    if(availableNames.length === 0){
+        res.status(400).send("Nothing To Update");
+    }
+
+    values.push(bookId);
+    values.push(req.libraryId);
+
+    try{
+        const numberOfChanges = db.prepare(
+            `update books
+            set ${availableNames.join(', ')}
+            where id = ? and library_id = ?`
+        ).run(...values).changes;
+
+        if(numberOfChanges === 0){
+            return res.status(404).send("Book Not Found");
+        }
+
+        res.send(numberOfChanges);
+
+    } catch(error){
+        console.log(error.message);
+        res.status(500).send("Internal Server Error");
+    }
+});
+
+
+router.delete('/deleteone/:id', (req, res) => {
+
+    const bookId = parseInt(req.params.id);
+
+    if(!bookId){
+        return res.status(404).send('Book Id Must be Int');
+    }
+
+    try{
+        const numberOfChanges = db.prepare(
+            `delete from books
+            where id = ? and library_id = ?`
+        ).run(bookId, req.libraryId).changes;
+
+        if(numberOfChanges === 0){
+            return res.status(404).send("Book Not Found");
+        }
+
+        res.send(numberOfChanges);
+    } catch(error){
+        console.log(error.message);
+        res.status(500).send("Internal Server Error");
+    }
 });
 
 

@@ -8,7 +8,7 @@ db.prepare(`
     membership_fee INTEGER NOT NULL,
     late_fee INTEGER NOT NULL
   )
-`)
+`).run()
 
 db.prepare(`
   CREATE TABLE IF NOT EXISTS books (

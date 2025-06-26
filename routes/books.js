@@ -1,7 +1,7 @@
 const express = require('express');
 const libraryAuth = require('../middleware/requireLibraryAuth');
 const internalError = require('../middleware/internalError');
-const db = require('../db')
+const db = require('../db');
 
 const router = express.Router()
 

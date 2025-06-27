@@ -1,4 +1,4 @@
-const db = require('./db');
+const db = require('../db');
 
 db.prepare(`
   CREATE TABLE IF NOT EXISTS libraries(
@@ -6,9 +6,7 @@ db.prepare(`
     name TEXT NOT NULL,
     doj TEXT,
     membership_fee INTEGER NOT NULL,
-    late_fee INTEGER NOT NULL,
-    return_time integer not null default 30,
-    borrow_limit integer not null default 2
+    late_fee INTEGER NOT NULL
   )
 `).run()
 
@@ -19,7 +17,6 @@ db.prepare(`
     name TEXT NOT NULL,
     author TEXT,
     count INTEGER DEFAULT 1,
-    borrowed_count integer not null default 0,
     FOREIGN KEY(library_id) REFERENCES libraries(id)
   )
 `).run();

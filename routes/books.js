@@ -81,6 +81,56 @@ router.post('/addone', (req, res) => {
     }
 });
 
+router.put('/updatecount/:id', (req, res) => {
+
+    const bookId = parseInt(req.params.id);
+
+    const {is_increase, count} = req.body;
+
+    if(typeof is_increase !== "boolean" || !parseInt(count) || parseInt(count) <= 0){
+        return res.status(400).send("'is_increase' should be boolean and 'count' should be Integer greater than 0");
+    }
+
+    if(is_increase){
+
+        try{
+            const changes = db.prepare(
+                `update books
+                set count = count + ?
+                where id = ? and library_id = ?`
+            ).run(count, bookId, req.libraryId);
+
+            if(changes.changes === 0){
+                return res.status(404).send("Book Not Found");
+            }
+
+            res.send(changes);
+        } catch(error){
+            internalError(res, error);
+        }
+
+    } else{
+
+        try{
+            const changes = db.prepare(
+                `update books
+                set count = count - ?
+                where id = ? and library_id = ? and count - borrowed_count - ?`
+            ).run(count, bookId, req.libraryId, count);
+
+            if(changes.changes === 0){
+                return res.status(404).send("Either Book not Found or Recducing more than available");
+            }
+
+            res.send(changes);
+        } catch(error){
+            internalError(res, error);
+        }
+
+    }
+
+});
+
 router.patch('/updateone/:id', (req, res) => {
     const bookId = parseInt(req.params.id);
 

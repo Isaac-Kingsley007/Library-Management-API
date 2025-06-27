@@ -96,11 +96,43 @@ router.post('/borrow', (req, res) => {
     const borrowedOn = new Date().toISOString();
 
     try{
+        const borrowLimit = db.prepare(
+            `select borrow_limit
+            from libraries
+            where id = ?`
+        ).get(req.libraryId).borrow_limit;
+
+        const alreadyBorrowed =db.prepare(
+            `select count(*) as ab
+            from borrows
+            where member_id = ? and library_id = ?`
+        ).get(memberId, req.libraryId).ab;
+
+        if(alreadyBorrowed >= borrowLimit){
+            return res.status(400).send("Aleadry Borrowed Enough Books");
+        }
+
+        const available = db.prepare(
+            `select count - borrowed_count as available
+            from books
+            where id = ? and library_id = ?`
+        ).get(bookId, req.libraryId).available;
+
+        if(available === 0){ //When Scales Add a column named min shelf capacity replace that instead of 0
+            return res.status(409).send("Book Currently Not Avavilable");
+        }
+
         const changes = db.prepare(
             `insert into borrows
             (library_id, member_id, book_id, borrowed_on)
             values (?, ?, ?, ?)`
         ).run(req.libraryId, memberId, bookId, borrowedOn);
+
+        db.prepare(
+            `update books
+            set borrowed_count = borrowed_count + 1
+            where id = ? and library_id = ?`
+        ).run(bookId, req.libraryId);
 
         res.send(changes);
     } catch(error){
@@ -118,12 +150,11 @@ router.delete('/return/:id', (req, res) =>{
     
     const borrowId = idParser(req.params.id);
     if(isNaN(borrowId)) return;
-    console.log(borrowId);
     const returnDate = new Date();
 
     try{
         const borrowedOn = db.prepare(
-            `select borrowed_on
+            `select borrowed_on, book_id
             from borrows
             where id = ? and library_id = ?`
         ).get(borrowId, req.libraryId);
@@ -137,18 +168,23 @@ router.delete('/return/:id', (req, res) =>{
             where id = ? and library_id = ?`
         ).run(borrowId, req.libraryId);
 
-        const lateFinePerDay = db.prepare(
-            `select late_fee
+        db.prepare(
+            `update books
+            set borrowed_count = borrowed_count - 1
+            where id = ? and library_id = ?`
+        ).run(borrowedOn.book_id, req.libraryId);
+
+        const lateFineData = db.prepare(
+            `select late_fee, return_time
             from libraries
             where id = ?`
-        ).get(req.libraryId).late_fee;
+        ).get(req.libraryId);
 
         const borrowedOnDate = new Date(borrowedOn.borrowed_on);
 
         //zero if before or on time else days delayed
-        //time for borrow 30 days for now ------------------------------------------------------------> here
-        const delayInDays = Math.max(Math.ceil((returnDate - borrowedOnDate) / (1000 * 60 * 60 * 24)) - 30, 0);
-        const fine = delayInDays * lateFinePerDay;
+        const delayInDays = Math.max(Math.ceil((returnDate - borrowedOnDate) / (1000 * 60 * 60 * 24)) - lateFineData.return_time, 0);
+        const fine = delayInDays * lateFineData.late_fee;
         
         return res.send(fine);
     } catch(error){

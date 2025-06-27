@@ -10,7 +10,7 @@ router.use(libraryAuth);
 router.get('/getall', (req, res) => {
     try{
         const books = db.prepare(
-            `select id, name, author, count
+            `select id, name, author, count, borrowed_count
             from books
             where library_id = ?`
         ).all(req.libraryId);
@@ -30,7 +30,7 @@ router.get('/getone/:id', (req, res) => {
 
     try {
         const book = db.prepare(`
-            SELECT id, name, author, count
+            SELECT id, name, author, count, borrowed_count
             FROM books
             WHERE library_id = ? AND id = ?
         `).get(req.libraryId, bookId);
@@ -48,7 +48,7 @@ router.get('/getbyname/:name', (req, res) => {
 
     try {
         const books = db.prepare(`
-            SELECT id, name, author, count
+            SELECT id, name, author, count, borrowed_count
             FROM books
             WHERE library_id = ? AND name = ?
         `).all(req.libraryId, bookName);
@@ -99,25 +99,43 @@ router.patch('/updateone/:id', (req, res) => {
             values.push(req.body[param]);
         }
     }
-
-    if(req.body.count){
+    
+    if(req.body.count !== undefined){
         const countInt = parseInt(req.body.count);
-        if(!countInt){
+        
+        if(isNaN(countInt)){
             return res.status(400).send("'count' should be a valid int");
         }
 
         availableNames.push('count = ?');
         values.push(countInt);
     }
-
+    
     if(availableNames.length === 0){
-        res.status(400).send("Nothing To Update");
+        return res.status(400).send("Nothing To Update");
     }
 
     values.push(bookId);
     values.push(req.libraryId);
 
     try{
+
+        if(req.body.count !== undefined){
+            const borrowedCount = db.prepare(
+                `select borrowed_count
+                from books 
+                where id = ? and library_id = ?`
+            ).get(bookId, req.libraryId);
+
+            if(!borrowedCount){
+                return res.status(404).send("Book Not Found");
+            }
+
+            if(parseInt(req.body.count) < borrowedCount.borrowed_count){
+                return res.status(400).send("New Could Should be Greater Than are equal to already borrowed Count");
+            }
+        }
+
         const numberOfChanges = db.prepare(
             `update books
             set ${availableNames.join(', ')}
